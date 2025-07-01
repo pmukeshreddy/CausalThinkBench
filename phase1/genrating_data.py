@@ -60,6 +60,6 @@ def genrate_and_save_data(num_example,output_file,prompt_template):
         print(f"Error generating example {i + 1}: {e}")
         print(response)
         print("Skipping this example.")
-    #  time.sleep(2) 
+      time.sleep(2) 
   print(f"\nData generation complete. Data saved to '{output_file}'.")
 
