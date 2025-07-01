@@ -1,5 +1,10 @@
 import google.generativeai as genai
 from google.colab import userdata
+import os
+import json
+import random
+import time
+
 
 api_key = "***************"
 genai.configure(api_key=api_key)
@@ -35,3 +40,26 @@ Please adhere to these rules for the content:
 
 Now, generate one such JSON object for the following category: {category}
 """
+
+
+def genrate_and_save_data(num_example,output_file,prompt_template):
+  with open(output_file,"a",encoding="utf-8") as f:
+    for i in range(num_example):
+      try:
+        selected_category = random.choice(categories)
+        print("a")
+        formatted_prompt = prompt_template.format(category=selected_category)
+        print("b")
+        response = model.generate_content(formatted_prompt)
+        print("c")
+        json_string = response.text
+        json.loads(json_string)
+        f.write(json_string="\n")
+        print(f"Successfully generated and saved example {i + 1}/{num_example}")
+      except Exception as e:
+        print(f"Error generating example {i + 1}: {e}")
+        print(response)
+        print("Skipping this example.")
+    #  time.sleep(2) 
+  print(f"\nData generation complete. Data saved to '{output_file}'.")
+
