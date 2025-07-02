@@ -34,9 +34,10 @@ Explain the causal link between the premise and the conclusion with a clear, ste
 {' -> '.join(example['human_like_reasoning_chain'])}"""
   return {"text": prompt}
 
-# Apply formatting to training data only
+# Apply formatting to both training and validation data
 train_dataset = train_test_split['train'].map(format_prompt)
-test_dataset = train_test_split['test']  # Keep original format for testing
+eval_dataset = train_test_split['test'].map(format_prompt)  # Format eval data too
+test_dataset = train_test_split['test']  # Keep original format for final testing
 
 base_model = "mistralai/Mistral-7B-Instruct-v0.2"
 
@@ -61,6 +62,9 @@ sft_config = SFTConfig(
     num_train_epochs=4,
     logging_steps=10,
     save_steps=50,
+    eval_steps=10,  # Evaluate every 10 steps
+    evaluation_strategy="steps",  # Evaluate during training
+    per_device_eval_batch_size=4,  # Batch size for evaluation
     bf16=True,
     max_seq_length=1024,
     packing=False,
@@ -73,7 +77,8 @@ data_collator = DataCollatorForLanguageModeling(
 
 trainer = SFTTrainer(
     model=model,
-    train_dataset=train_dataset,  # Use train split only
+    train_dataset=train_dataset,
+    eval_dataset=eval_dataset,  # Add validation dataset
     peft_config=lora_config,
     args=sft_config,
     data_collator=data_collator,
@@ -105,8 +110,8 @@ Explain the causal link between the premise and the conclusion with a clear, ste
         inputs = {k: v.to(model.device) for k, v in inputs.items()}
         
         with torch.no_grad():
-            outputs = model.generate(**inputs, max_new_tokens=200, temperature=0.7, do_sample=True, pad_token_id=tokenizer.eos_token_id)
-        
+            with torch.autocast(device_type="cuda", dtype=torch.bfloat16):  # Add autocast
+                outputs = model.generate(**inputs, max_new_tokens=200, temperature=0.7, do_sample=True, pad_token_id=tokenizer.eos_token_id)        
         generated = tokenizer.decode(outputs[0], skip_special_tokens=True)
         response = generated.split("### RESPONSE:")[-1].strip()
         
