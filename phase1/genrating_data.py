@@ -42,24 +42,57 @@ Now, generate one such JSON object for the following category: {category}
 """
 
 
-def genrate_and_save_data(num_example,output_file,prompt_template):
-  with open(output_file,"a",encoding="utf-8") as f:
-    for i in range(num_example):
+import os
+import json
+import random
+import time
+from tqdm import tqdm
+import concurrent.futures # Use the 'futures' library for threading
+
+# The function is no longer async.
+def generate_and_save_data(num_examples, output_filename, prompt):
+
+  # This simple function makes one synchronous API call.
+  # It will be executed in a separate thread for each request.
+  def generate_one(p):
       try:
-        selected_category = random.choice(categories)
-        print("a")
-        formatted_prompt = prompt_template.format(category=selected_category)
-        print("b")
-        response = model.generate_content(formatted_prompt)
-        print("c")
-        json_string = response.text
-        json.loads(json_string)
-        f.write(json_string="\n")
-        print(f"Successfully generated and saved example {i + 1}/{num_example}")
+          response = model.generate_content(p)
+          return response.text
       except Exception as e:
-        print(f"Error generating example {i + 1}: {e}")
-        print(response)
-        print("Skipping this example.")
-      time.sleep(2) 
-  print(f"\nData generation complete. Data saved to '{output_file}'.")
+          return e
+
+  # Create all the prompts we need ahead of time
+  prompts = []
+  for _ in range(num_examples):
+        selected_category = random.choice(categories)
+        formatted_prompt = prompt.format(category=selected_category)
+        prompts.append(formatted_prompt)
+
+  successful_generations = 0
+
+  # Use ThreadPoolExecutor to run many synchronous calls at the same time.
+  # max_workers determines how many run concurrently. 50 is a good start.
+  with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+      # Submit all tasks to the executor
+      future_to_prompt = {executor.submit(generate_one, p): p for p in prompts}
+
+      with open(output_filename, "a", encoding="utf-8") as f:
+          # Use tqdm to create a progress bar as tasks complete
+          for future in tqdm(concurrent.futures.as_completed(future_to_prompt), total=num_examples, desc="Generating Examples"):
+              result = future.result()
+
+              if isinstance(result, Exception):
+                  continue
+
+              try:
+                  json_string = result
+                  if "```json" in json_string:
+                      json_string = json_string.split("```json\\n")[1].split("\\n```")[0]
+                  json.loads(json_string)
+                  f.write(json_string + "\\n")
+                  successful_generations += 1
+              except Exception as e:
+                  pass # Skip malformed results
+
+  print(f"\\nData generation complete. {successful_generations}/{num_examples} examples saved to '{output_filename}'.")
 
