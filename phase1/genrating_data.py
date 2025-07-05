@@ -6,7 +6,7 @@ import random
 import time
 
 
-api_key = "***************"
+api_key = "****************"
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-2.5-pro',generation_config=GenerationConfig(response_mime_type="application/json"))
 categories = [
