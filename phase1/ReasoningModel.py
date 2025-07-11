@@ -22,23 +22,20 @@ class ReasoningModel(nn.Module):
 
 		#specilased human like reasoining or not
         self.confidence_head = nn.Sequential(
-        									nn.Linear(self.hidden_size, 512),
-        									nn.ReLU(),
-        									nn.Dropout(0.1),
-											nn.Linear(512, 1)
+        			nn.Linear(self.hidden_size, 512),
+        			nn.ReLU(),
+        			nn.Dropout(0.1),
+				nn.Linear(512, 1) )
         									)
         # emotional state predication
-       	self.emotion_head = nn.Sequential(
-       						nn.Linear(self.hidden_size, 512)
+       	self.emotion_head = nn.Sequential(nn.Linear(self.hidden_size, 512)
        						, nn.ReLU(), nn.Dropout(0.1), nn.Linear(512, 6), nn.Softmax(dim=1))
         # curious, cautious, confident, creative, analytical, empathetic
         # reasoining mode selector
-        self.mode_selector = nn.Sequential(
-        						nn.Linear(self.hidden_size, 256),
+        self.mode_selector = nn.Sequential(nn.Linear(self.hidden_size, 256),
         						nn.ReLU(), nn.Linear(256, 4), nn.Softmax(dim=1))
         # analytical, creative, social, intuitive
-        self.memory_relavance = nn.Sequential(
-        							nn.Linear(self.hidden_size * 2, 256), nn.ReLU(),
+        self.memory_relavance = nn.Sequential(nn.Linear(self.hidden_size * 2, 256), nn.ReLU(),
         							 nn.Linear(256, 1), nn.Sigmoid())
 
     def forward(self, input_ids, attention_mask=None, memory_context=None):
@@ -65,8 +62,7 @@ class ReasoningModel(nn.Module):
         with torch.no_grad():
             reasoining_outputs = self.forward(inputs.input_ids, inputs.attention_mask)
 
-            generated_response = self.model.generate(inputs.input_ids,
-            										attention_mask=inputs.attention_mask, max_length=max_length, temperature=temperature, do_sample=do_sample,pad_token_id=self.tokenizer.pad_token_id,
+            generated_response = self.model.generate(inputs.input_ids,attention_mask=inputs.attention_mask, max_length=max_length, temperature=temperature, do_sample=do_sample,pad_token_id=self.tokenizer.pad_token_id,
 
 
                                                                                                                                                                               eos_token_id=self.tokenizer.eos_token_id)
