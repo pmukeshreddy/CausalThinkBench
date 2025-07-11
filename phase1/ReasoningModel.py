@@ -80,7 +80,7 @@ class ReasoningModel(nn.Module):
                             'reasoning_mode': reasoning_outputs['reasoning_mode'].squeeze().tolist()
                         }
 
-	def get_emotion_labels(self):
+    def get_emotion_labels(self):
             """Return emotion labels for interpretation"""
             return ['curious', 'cautious', 'confident', 'creative', 'analytical', 'empathetic']
         
